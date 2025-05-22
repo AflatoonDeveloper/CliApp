@@ -67,8 +67,10 @@ Deno.serve(async (req) => {
     }
 
     // Call the Gemini API to analyze the food image
-    const API_KEY = "AIzaSyBF5NAnAvzuKKeKmGijZJKfr3vLHIiZTow";
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${API_KEY}`;
+    const API_KEY =
+      Deno.env.get("GEMINI_API_KEY") ||
+      "AIzaSyBF5NAnAvzuKKeKmGijZJKfr3vLHIiZTow";
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     try {
       const response = await fetch(API_URL, {
@@ -97,12 +99,7 @@ Deno.serve(async (req) => {
       });
 
       if (!response.ok) {
-        // If the API call fails, return mock data for demonstration
-        console.error("Gemini API call failed, returning mock data");
-        return new Response(JSON.stringify(getMockAnalysisResult()), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
+        throw new Error(`API request failed with status ${response.status}`);
       }
 
       const data = await response.json();
@@ -120,9 +117,33 @@ Deno.serve(async (req) => {
 
       try {
         // Parse the JSON response
-        const parsedResult = JSON.parse(
-          jsonString.replace(/```json|```/g, "").trim(),
-        );
+        let parsedResult;
+        try {
+          parsedResult = JSON.parse(
+            jsonString.replace(/```json|```/g, "").trim(),
+          );
+        } catch (jsonParseError) {
+          console.error("Error parsing JSON response:", jsonParseError);
+          console.log("Raw response:", textResponse);
+          // Provide fallback data if parsing fails
+          parsedResult = {
+            foodItems: [
+              {
+                name: "Unknown Food Item",
+                calories: 200,
+                protein: 10,
+                carbs: 20,
+                fat: 5,
+              },
+            ],
+            totalNutrition: {
+              calories: 200,
+              protein: 10,
+              carbs: 20,
+              fat: 5,
+            },
+          };
+        }
 
         // Validate and format the response
         const analysisResult: AnalysisResult = {
@@ -135,25 +156,32 @@ Deno.serve(async (req) => {
           },
         };
 
+        // Store the analysis result in Supabase
+        if (userId) {
+          const { error: storageError } = await supabaseClient
+            .from("food_analysis_results")
+            .insert({
+              user_id: userId,
+              result: analysisResult,
+              created_at: new Date().toISOString(),
+            });
+
+          if (storageError) {
+            console.error("Error storing analysis result:", storageError);
+          }
+        }
+
         return new Response(JSON.stringify(analysisResult), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
       } catch (parseError) {
         console.error("Error parsing Gemini response:", parseError);
-        // Return mock data if parsing fails
-        return new Response(JSON.stringify(getMockAnalysisResult()), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
+        throw parseError;
       }
     } catch (apiError) {
       console.error("Error calling Gemini API:", apiError);
-      // Return mock data if API call fails
-      return new Response(JSON.stringify(getMockAnalysisResult()), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      throw apiError;
     }
   } catch (error) {
     console.error("General error:", error);
@@ -163,41 +191,3 @@ Deno.serve(async (req) => {
     });
   }
 });
-
-// Function to get mock analysis result
-function getMockAnalysisResult(): AnalysisResult {
-  return {
-    foodItems: [
-      {
-        name: "Grilled Chicken Breast",
-        calories: 165,
-        protein: 31,
-        carbs: 0,
-        fat: 3.6,
-        portion: "100g",
-      },
-      {
-        name: "Brown Rice",
-        calories: 112,
-        protein: 2.6,
-        carbs: 23.5,
-        fat: 0.9,
-        portion: "100g",
-      },
-      {
-        name: "Steamed Broccoli",
-        calories: 55,
-        protein: 3.7,
-        carbs: 11.2,
-        fat: 0.6,
-        portion: "100g",
-      },
-    ],
-    totalNutrition: {
-      calories: 332,
-      protein: 37.3,
-      carbs: 34.7,
-      fat: 5.1,
-    },
-  };
-}

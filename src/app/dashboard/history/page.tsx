@@ -54,82 +54,50 @@ export default function HistoryPage() {
     try {
       setLoading(true);
 
-      // In a real implementation, we would fetch from the database
-      // const { data, error } = await supabase
-      //   .from('meals')
-      //   .select('*')
-      //   .eq('user_id', userId)
-      //   .order('created_at', { ascending: false });
+      // Fetch real data from Supabase
+      const { data, error } = await supabase
+        .from("meals")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
-      // if (error) throw error;
+      if (error) {
+        console.error("Supabase query error:", error);
+        throw error;
+      }
 
-      // For now, use mock data
-      const mockMeals = [
-        {
-          id: "1",
-          date: "2023-06-15",
-          time: "12:30 PM",
-          title: "Lunch",
-          calories: 550,
-          protein: 32,
-          carbs: 45,
-          fat: 22,
-          image:
-            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80",
-        },
-        {
-          id: "2",
-          date: "2023-06-15",
-          time: "7:00 PM",
-          title: "Dinner",
-          calories: 680,
-          protein: 42,
-          carbs: 55,
-          fat: 25,
-          image:
-            "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800&q=80",
-        },
-        {
-          id: "3",
-          date: "2023-06-14",
-          time: "8:15 AM",
-          title: "Breakfast",
-          calories: 420,
-          protein: 22,
-          carbs: 48,
-          fat: 16,
-          image:
-            "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800&q=80",
-        },
-        {
-          id: "4",
-          date: "2023-06-13",
-          time: "1:00 PM",
-          title: "Lunch",
-          calories: 520,
-          protein: 35,
-          carbs: 40,
-          fat: 18,
-          image:
-            "https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=800&q=80",
-        },
-        {
-          id: "5",
-          date: "2023-06-12",
-          time: "6:45 PM",
-          title: "Dinner",
-          calories: 720,
-          protein: 45,
-          carbs: 60,
-          fat: 28,
-          image:
-            "https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=80",
-        },
-      ];
+      if (data && data.length > 0) {
+        // Transform the data to match our MealItem interface
+        const formattedMeals = data.map((meal) => {
+          const createdAt = new Date(meal.created_at || Date.now());
+          return {
+            id: meal.id,
+            date: createdAt.toISOString().split("T")[0],
+            time: createdAt.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            title: meal.title || "Meal",
+            calories: meal.total_calories || 0,
+            protein: meal.total_protein_grams || 0,
+            carbs: meal.total_carbs_grams || 0,
+            fat: meal.total_fat_grams || 0,
+            image:
+              meal.image_url ||
+              "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80",
+            created_at: meal.created_at,
+          };
+        });
 
-      setMeals(mockMeals);
+        console.log("Fetched meals:", formattedMeals);
+        setMeals(formattedMeals);
+      } else {
+        console.log("No meals found for user", userId);
+        setMeals([]);
+      }
     } catch (error) {
       console.error("Error fetching meals:", error);
+      setMeals([]);
     } finally {
       setLoading(false);
     }
@@ -137,13 +105,10 @@ export default function HistoryPage() {
 
   const deleteMeal = async (mealId: string) => {
     try {
-      // In a real implementation, we would delete from the database
-      // const { error } = await supabase
-      //   .from('meals')
-      //   .delete()
-      //   .eq('id', mealId);
+      // Delete from the database
+      const { error } = await supabase.from("meals").delete().eq("id", mealId);
 
-      // if (error) throw error;
+      if (error) throw error;
 
       // Update local state
       setMeals(meals.filter((meal) => meal.id !== mealId));

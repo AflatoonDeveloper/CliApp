@@ -86,19 +86,50 @@ export default function UploadPage() {
         const base64Image = reader.result?.toString().split(",")[1] || "";
 
         try {
-          // Call the Gemini API through our utility function
-          const analysisResult = await analyzeFoodImage(base64Image);
-          setResults(analysisResult);
-          setProgress(100);
+          // Get the current user
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
 
-          // Simulate uploading to storage
-          // In a real implementation, we would upload the image to Supabase Storage
-          // const { data: uploadData, error: uploadError } = await supabase.storage
-          //   .from('food-images')
-          //   .upload(`${Date.now()}-${image.name}`, image);
+          if (!user) {
+            throw new Error("User not authenticated");
+          }
 
-          // if (uploadError) throw uploadError;
-          // const imageUrl = supabase.storage.from('food-images').getPublicUrl(uploadData.path).data.publicUrl;
+          // Upload image to Supabase Storage
+          const { data: uploadData, error: uploadError } =
+            await supabase.storage
+              .from("food-images")
+              .upload(`${Date.now()}-${image.name}`, image);
+
+          if (uploadError) throw uploadError;
+          const imageUrl = supabase.storage
+            .from("food-images")
+            .getPublicUrl(uploadData.path).data.publicUrl;
+
+          // Call the Supabase Edge Function to analyze the image
+          try {
+            const { data: analysisResult, error: functionError } =
+              await supabase.functions.invoke(
+                "supabase-functions-analyze_food",
+                {
+                  body: { imageBase64: base64Image, userId: user.id },
+                },
+              );
+
+            if (functionError) throw functionError;
+            if (!analysisResult) throw new Error("No analysis result returned");
+
+            console.log("Analysis result:", analysisResult);
+            setResults(analysisResult);
+            setProgress(100);
+          } catch (functionErr) {
+            console.error("Edge function error:", functionErr);
+            // Fallback to local analysis if edge function fails
+            console.log("Falling back to local analysis");
+            const localAnalysisResult = await analyzeFoodImage(base64Image);
+            setResults(localAnalysisResult);
+            setProgress(100);
+          }
         } catch (err) {
           console.error(err);
           setError("Failed to analyze image. Please try again.");

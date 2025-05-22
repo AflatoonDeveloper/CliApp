@@ -37,6 +37,7 @@ export default function InsightsPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [hasData, setHasData] = useState(true); // Set to true to show mock data
+  const [dailyData, setDailyData] = useState<any[]>([]);
   const router = useRouter();
   const supabase = createClient();
 
@@ -381,7 +382,7 @@ export default function InsightsPage() {
                   </CardHeader>
                   <CardContent className="h-64">
                     <div className="h-full flex items-end justify-between px-2">
-                      {mockDailyData.map((day, index) => (
+                      {dailyData.map((day, index) => (
                         <div key={index} className="flex flex-col items-center">
                           <div
                             className="bg-green-500 w-8 rounded-t-md"
@@ -482,9 +483,65 @@ export default function InsightsPage() {
               </TabsContent>
 
               <TabsContent value="monthly" className="space-y-6">
-                <div className="flex h-64 items-center justify-center text-gray-500 bg-white rounded-xl border">
-                  Monthly data visualization coming soon!
-                </div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Monthly Nutrition Trends</CardTitle>
+                    <CardDescription>
+                      Long-term nutrition analysis and patterns
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="py-4">
+                      <h3 className="text-lg font-medium mb-3">
+                        Coming Soon: Monthly Analytics Dashboard
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        Our comprehensive monthly analytics will include:
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="p-3 border rounded-md">
+                          <h4 className="font-medium mb-2">
+                            Monthly Trend Charts
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            Track your progress with detailed monthly
+                            visualizations of calories and macronutrients.
+                          </p>
+                        </div>
+                        <div className="p-3 border rounded-md">
+                          <h4 className="font-medium mb-2">
+                            Nutrition Calendar
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            Calendar view showing daily nutrition quality scores
+                            and meal consistency.
+                          </p>
+                        </div>
+                        <div className="p-3 border rounded-md">
+                          <h4 className="font-medium mb-2">Goal Achievement</h4>
+                          <p className="text-sm text-gray-600">
+                            Track your progress toward monthly nutrition and
+                            health goals.
+                          </p>
+                        </div>
+                        <div className="p-3 border rounded-md">
+                          <h4 className="font-medium mb-2">
+                            Personalized Reports
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            Downloadable PDF reports with insights and
+                            recommendations.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-3 bg-green-50 rounded-md text-sm text-green-700">
+                        <strong>Beta access coming soon!</strong> Join our
+                        waitlist to be among the first to try these advanced
+                        analytics features.
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           ) : (
