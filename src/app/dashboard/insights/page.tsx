@@ -51,29 +51,106 @@ export default function InsightsPage() {
         return;
       }
       setUser(user);
-      setLoading(false);
+      fetchNutritionData(user.id);
     }
     getUser();
   }, [router, supabase]);
 
+  const fetchNutritionData = async (userId: string) => {
+    try {
+      setLoading(true);
+
+      // Get meals from the last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const { data, error } = await supabase
+        .from("meals")
+        .select("*")
+        .eq("user_id", userId)
+        .gte("created_at", sevenDaysAgo.toISOString())
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Supabase query error:", error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        console.log("Fetched nutrition data:", data);
+
+        // Process the data to group by day
+        const mealsByDay = data.reduce((acc: Record<string, any>, meal) => {
+          const date = new Date(meal.created_at);
+          const dayStr = date.toISOString().split("T")[0];
+          const dayName = date.toLocaleDateString("en-US", {
+            weekday: "short",
+          });
+
+          if (!acc[dayStr]) {
+            acc[dayStr] = {
+              day: dayName,
+              date: dayStr,
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fat: 0,
+              count: 0,
+            };
+          }
+
+          acc[dayStr].calories += meal.total_calories || 0;
+          acc[dayStr].protein += meal.total_protein_grams || 0;
+          acc[dayStr].carbs += meal.total_carbs_grams || 0;
+          acc[dayStr].fat += meal.total_fat_grams || 0;
+          acc[dayStr].count += 1;
+
+          return acc;
+        }, {});
+
+        // Convert to array and sort by date
+        const processedData = Object.values(mealsByDay).sort((a, b) => {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        });
+
+        console.log("Processed daily data:", processedData);
+        setDailyData(processedData);
+        setHasData(processedData.length > 0);
+      } else {
+        console.log("No nutrition data found for user", userId);
+        setHasData(false);
+        setDailyData([]);
+      }
+    } catch (error) {
+      console.error("Error fetching nutrition data:", error);
+      setHasData(false);
+      setDailyData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Calculate averages and trends
   const calculateAverages = () => {
-    const totalCalories = mockDailyData.reduce(
-      (sum, day) => sum + day.calories,
-      0,
-    );
-    const totalProtein = mockDailyData.reduce(
-      (sum, day) => sum + day.protein,
-      0,
-    );
-    const totalCarbs = mockDailyData.reduce((sum, day) => sum + day.carbs, 0);
-    const totalFat = mockDailyData.reduce((sum, day) => sum + day.fat, 0);
+    if (!dailyData.length) {
+      return {
+        avgCalories: 0,
+        avgProtein: 0,
+        avgCarbs: 0,
+        avgFat: 0,
+      };
+    }
+
+    const totalCalories = dailyData.reduce((sum, day) => sum + day.calories, 0);
+    const totalProtein = dailyData.reduce((sum, day) => sum + day.protein, 0);
+    const totalCarbs = dailyData.reduce((sum, day) => sum + day.carbs, 0);
+    const totalFat = dailyData.reduce((sum, day) => sum + day.fat, 0);
 
     return {
-      avgCalories: Math.round(totalCalories / mockDailyData.length),
-      avgProtein: Math.round(totalProtein / mockDailyData.length),
-      avgCarbs: Math.round(totalCarbs / mockDailyData.length),
-      avgFat: Math.round(totalFat / mockDailyData.length),
+      avgCalories: Math.round(totalCalories / dailyData.length),
+      avgProtein: Math.round(totalProtein / dailyData.length),
+      avgCarbs: Math.round(totalCarbs / dailyData.length),
+      avgFat: Math.round(totalFat / dailyData.length),
     };
   };
 
@@ -81,25 +158,46 @@ export default function InsightsPage() {
 
   // Calculate trends (comparing last day to average)
   const calculateTrends = () => {
-    const lastDay = mockDailyData[mockDailyData.length - 1];
+    if (!dailyData.length) {
+      return {
+        caloriesTrend: "0.0",
+        proteinTrend: "0.0",
+        carbsTrend: "0.0",
+        fatTrend: "0.0",
+      };
+    }
+
+    const lastDay = dailyData[dailyData.length - 1];
 
     return {
-      caloriesTrend: (
-        ((lastDay.calories - averages.avgCalories) / averages.avgCalories) *
-        100
-      ).toFixed(1),
-      proteinTrend: (
-        ((lastDay.protein - averages.avgProtein) / averages.avgProtein) *
-        100
-      ).toFixed(1),
-      carbsTrend: (
-        ((lastDay.carbs - averages.avgCarbs) / averages.avgCarbs) *
-        100
-      ).toFixed(1),
-      fatTrend: (
-        ((lastDay.fat - averages.avgFat) / averages.avgFat) *
-        100
-      ).toFixed(1),
+      caloriesTrend:
+        averages.avgCalories === 0
+          ? "0.0"
+          : (
+              ((lastDay.calories - averages.avgCalories) /
+                averages.avgCalories) *
+              100
+            ).toFixed(1),
+      proteinTrend:
+        averages.avgProtein === 0
+          ? "0.0"
+          : (
+              ((lastDay.protein - averages.avgProtein) / averages.avgProtein) *
+              100
+            ).toFixed(1),
+      carbsTrend:
+        averages.avgCarbs === 0
+          ? "0.0"
+          : (
+              ((lastDay.carbs - averages.avgCarbs) / averages.avgCarbs) *
+              100
+            ).toFixed(1),
+      fatTrend:
+        averages.avgFat === 0
+          ? "0.0"
+          : (((lastDay.fat - averages.avgFat) / averages.avgFat) * 100).toFixed(
+              1,
+            ),
     };
   };
 
@@ -146,7 +244,9 @@ export default function InsightsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        {mockDailyData[mockDailyData.length - 1].calories}
+                        {dailyData.length
+                          ? dailyData[dailyData.length - 1].calories
+                          : 0}
                       </div>
                       <div className="flex items-center text-xs">
                         {parseFloat(trends.caloriesTrend) > 0 ? (
@@ -176,7 +276,10 @@ export default function InsightsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        {mockDailyData[mockDailyData.length - 1].protein}g
+                        {dailyData.length
+                          ? dailyData[dailyData.length - 1].protein
+                          : 0}
+                        g
                       </div>
                       <div className="flex items-center text-xs">
                         {parseFloat(trends.proteinTrend) > 0 ? (
@@ -206,7 +309,10 @@ export default function InsightsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        {mockDailyData[mockDailyData.length - 1].carbs}g
+                        {dailyData.length
+                          ? dailyData[dailyData.length - 1].carbs
+                          : 0}
+                        g
                       </div>
                       <div className="flex items-center text-xs">
                         {parseFloat(trends.carbsTrend) > 0 ? (
@@ -234,7 +340,10 @@ export default function InsightsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        {mockDailyData[mockDailyData.length - 1].fat}g
+                        {dailyData.length
+                          ? dailyData[dailyData.length - 1].fat
+                          : 0}
+                        g
                       </div>
                       <div className="flex items-center text-xs">
                         {parseFloat(trends.fatTrend) > 0 ? (

@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import DashboardNavbar from "@/components/dashboard-navbar";
 import { redirect, useRouter } from "next/navigation";
 import { createClient } from "../../../../supabase/client";
-import { Calendar, Clock, Utensils, Trash2, Filter } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  Utensils,
+  Trash2,
+  Filter,
+} from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -215,7 +221,7 @@ export default function HistoryPage() {
                         className="bg-white rounded-xl p-6 border shadow-sm"
                       >
                         <div className="flex items-center gap-2 mb-4">
-                          <Calendar className="text-green-600" />
+                          <CalendarIcon className="text-green-600" />
                           <h2 className="text-xl font-semibold">
                             {new Date(date).toLocaleDateString("en-US", {
                               weekday: "long",

@@ -95,11 +95,14 @@ export default function UploadPage() {
             throw new Error("User not authenticated");
           }
 
-          // Upload image to Supabase Storage
+          // Upload image to Supabase Storage with user ID in path
           const { data: uploadData, error: uploadError } =
             await supabase.storage
               .from("food-images")
-              .upload(`${Date.now()}-${image.name}`, image);
+              .upload(
+                `${user.id}/${Date.now()}-${image.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`,
+                image,
+              );
 
           if (uploadError) throw uploadError;
           const imageUrl = supabase.storage
