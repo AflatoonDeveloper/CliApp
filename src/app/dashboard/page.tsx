@@ -63,7 +63,7 @@ export default async function Dashboard() {
               </Link>
 
               <Link
-                href="/dashboard"
+                href="/dashboard/history"
                 className="bg-white rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex flex-col items-center text-center gap-3">
@@ -78,7 +78,7 @@ export default async function Dashboard() {
               </Link>
 
               <Link
-                href="/dashboard"
+                href="/dashboard/insights"
                 className="bg-white rounded-xl p-6 border shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex flex-col items-center text-center gap-3">
@@ -130,6 +130,7 @@ export default async function Dashboard() {
                     src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80"
                     alt="Healthy meal prep"
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
                 </div>
@@ -150,6 +151,7 @@ export default async function Dashboard() {
                     src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&q=80"
                     alt="Balanced nutrition"
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
                 </div>

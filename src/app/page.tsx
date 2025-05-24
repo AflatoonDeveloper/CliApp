@@ -107,6 +107,7 @@ export default async function Home() {
                   src="https://images.unsplash.com/photo-1574484284002-952d92456975?w=800&q=80"
                   alt="App interface showing food analysis"
                   fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover"
                 />
               </div>

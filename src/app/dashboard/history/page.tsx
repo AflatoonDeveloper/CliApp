@@ -31,6 +31,8 @@ interface MealItem {
   carbs: number;
   fat: number;
   image: string;
+  image_url?: string;
+  created_at?: string;
 }
 
 export default function HistoryPage() {
@@ -241,9 +243,10 @@ export default function HistoryPage() {
                               <div className="w-full md:w-1/4 lg:w-1/5">
                                 <div className="aspect-square relative rounded-lg overflow-hidden">
                                   <Image
-                                    src={meal.image}
+                                    src={meal.image_url || meal.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80"}
                                     alt={meal.title}
                                     fill
+                                    sizes="(max-width: 768px) 100vw, 25vw"
                                     className="object-cover"
                                   />
                                 </div>

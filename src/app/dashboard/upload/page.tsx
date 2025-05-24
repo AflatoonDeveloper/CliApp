@@ -20,6 +20,7 @@ export default function UploadPage() {
   const [results, setResults] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -108,6 +109,8 @@ export default function UploadPage() {
           const imageUrl = supabase.storage
             .from("food-images")
             .getPublicUrl(uploadData.path).data.publicUrl;
+          
+          setUploadedImageUrl(imageUrl);
 
           // Call the Supabase Edge Function to analyze the image
           try {
@@ -178,7 +181,7 @@ export default function UploadPage() {
         .insert({
           user_id: user.id,
           title: "Lunch",
-          image_url: preview || undefined,
+          image_url: uploadedImageUrl || undefined,
           total_calories: results.totalNutrition.calories,
           total_protein_grams: results.totalNutrition.protein,
           total_carbs_grams: results.totalNutrition.carbs,
@@ -280,6 +283,7 @@ export default function UploadPage() {
                     src={preview}
                     alt="Food preview"
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
                 </div>
