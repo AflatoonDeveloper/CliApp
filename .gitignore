@@ -50,3 +50,7 @@ node_modules/
 .git
 
 .github/
+
+# Supabase Edge Functions
+supabase/functions/**/dist
+supabase/functions/**/.deno

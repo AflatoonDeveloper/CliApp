@@ -54,6 +54,29 @@ export default function HistoryPage() {
       }
       setUser(user);
       fetchMeals(user.id);
+
+      // Set up real-time subscription
+      const channel = supabase
+        .channel('meals_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'meals',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('Real-time update:', payload);
+            fetchMeals(user.id); // Refresh meals when changes occur
+          }
+        )
+        .subscribe();
+
+      // Cleanup subscription on unmount
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
     getUser();
   }, [router, supabase]);
@@ -143,10 +166,10 @@ export default function HistoryPage() {
     Object.entries(mealsByDate).forEach(
       ([date, mealsForDate]: [string, any]) => {
         const filteredMeals = mealsForDate.filter((meal: any) => {
-          if (filter === "breakfast")
-            return meal.title.toLowerCase() === "breakfast";
-          if (filter === "lunch") return meal.title.toLowerCase() === "lunch";
-          if (filter === "dinner") return meal.title.toLowerCase() === "dinner";
+          const mealTitle = meal.title.toLowerCase();
+          if (filter === "breakfast") return mealTitle.includes("breakfast");
+          if (filter === "lunch") return mealTitle.includes("lunch");
+          if (filter === "dinner") return mealTitle.includes("dinner");
           return true;
         });
 

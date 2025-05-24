@@ -6,7 +6,15 @@ const nextConfig = {
             'images.unsplash.com',
             'ypzodxbpqmdqlsiksgoy.supabase.co'
         ],
-    }
+    },
+    webpack: (config, { isServer }) => {
+        // Exclude Supabase Edge Functions from the build
+        config.module.rules.push({
+            test: /supabase\/functions\/.*\.ts$/,
+            use: 'ignore-loader',
+        });
+        return config;
+    },
 };
 
 if (process.env.NEXT_PUBLIC_TEMPO) {
