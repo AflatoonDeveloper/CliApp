@@ -24,7 +24,7 @@ const nextConfig = {
         return config;
     },
     experimental: {
-        serverActions: true,
+        // Add any other experimental features if needed
     },
 };
 

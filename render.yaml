@@ -12,4 +12,15 @@ services:
       - key: NEXT_PUBLIC_GEMINI_API_KEY
         sync: false
     healthCheckPath: /
-    autoDeploy: true 
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - package.json
+        - package-lock.json
+        - next.config.js
+        - src/**
+        - public/**
+    disk:
+      name: next-cache
+      mountPath: .next/cache
+      sizeGB: 1 

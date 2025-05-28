@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "postinstall": "npm audit fix"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.3",
@@ -65,5 +66,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "cacheDirectories": [
+    ".next/cache",
+    "node_modules"
+  ]
 }
