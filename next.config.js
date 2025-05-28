@@ -1,10 +1,18 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
+    output: 'standalone',
     images: {
         domains: [
             'images.unsplash.com',
-            'ypzodxbpqmdqlsiksgoy.supabase.co'
+            'ypzodxbpqmdqlsiksgoy.supabase.co',
+            'storage.googleapis.com'
+        ],
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: '**',
+            },
         ],
     },
     webpack: (config, { isServer }) => {
@@ -14,6 +22,9 @@ const nextConfig = {
             use: 'ignore-loader',
         });
         return config;
+    },
+    experimental: {
+        serverActions: true,
     },
 };
 

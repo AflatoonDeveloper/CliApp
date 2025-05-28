@@ -34,7 +34,7 @@ export default function DashboardNavbar() {
       <div className="container mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <Link href="/" prefetch className="text-xl font-bold text-green-600">
-            NutriAI
+          SnapCal
           </Link>
 
           <div className="hidden md:flex items-center space-x-1">

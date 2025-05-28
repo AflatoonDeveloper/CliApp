@@ -48,7 +48,7 @@ export default function Hero() {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-500" />
-                <span>Powered by Google Gemini AI</span>
+                <span>Powered by AI</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-5 h-5 text-green-500" />
