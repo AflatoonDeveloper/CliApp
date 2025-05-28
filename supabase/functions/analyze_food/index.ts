@@ -1,12 +1,38 @@
-/// <reference lib="deno.ns" />
-import { serve } from "std/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+
+// Type declarations
+declare global {
+  namespace Express {
+    interface Request {
+      headers: {
+        authorization?: string;
+      };
+      body: any;
+    }
+  }
+}
+
+// Gemini API response types
+interface GeminiResponse {
+  candidates: Array<{
+    content: {
+      parts: Array<{
+        text: string;
+      }>;
+    };
+  }>;
+}
+
+const app = express();
+app.use(cors());
+app.use(express.json());
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface FoodAnalysisRequest {
@@ -33,46 +59,26 @@ interface AnalysisResult {
   };
 }
 
-serve(async (req: Request) => {
-  // Handle CORS preflight request
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
+app.post('/analyze', async (req: Request, res: Response) => {
   try {
-    // Get the authorization header from the request
-    const authHeader = req.headers.get("Authorization");
+    const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "No authorization header" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return res.status(401).json({ error: "No authorization header" });
     }
 
-    // Create a Supabase client with the auth header
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } },
+      process.env.SUPABASE_URL ?? "",
+      process.env.SUPABASE_ANON_KEY ?? "",
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    // Get the request body
-    const { imageBase64, userId } = (await req.json()) as FoodAnalysisRequest;
+    const { imageBase64, userId } = req.body as FoodAnalysisRequest;
 
     if (!imageBase64) {
-      return new Response(JSON.stringify({ error: "Image data is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return res.status(400).json({ error: "Image data is required" });
     }
 
-    // Call the Gemini API to analyze the food image
-    const API_KEY =
-      Deno.env.get("GEMINI_API_KEY") ||
-      "AIzaSyBF5NAnAvzuKKeKmGijZJKfr3vLHIiZTow";
+    const API_KEY = process.env.GEMINI_API_KEY || "AIzaSyBF5NAnAvzuKKeKmGijZJKfr3vLHIiZTow";
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     try {
@@ -105,30 +111,23 @@ serve(async (req: Request) => {
         throw new Error(`API request failed with status ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as GeminiResponse;
       const textResponse = data.candidates[0].content.parts[0].text;
 
-      // Extract JSON from the response
       const jsonMatch =
         textResponse.match(/```json\n([\s\S]*)\n```/) ||
         textResponse.match(/```([\s\S]*)```/) ||
         textResponse.match(/{[\s\S]*}/);
 
-      const jsonString = jsonMatch
-        ? jsonMatch[1] || jsonMatch[0]
-        : textResponse;
+      const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : textResponse;
 
       try {
-        // Parse the JSON response
         let parsedResult;
         try {
-          parsedResult = JSON.parse(
-            jsonString.replace(/```json|```/g, "").trim(),
-          );
+          parsedResult = JSON.parse(jsonString.replace(/```json|```/g, "").trim());
         } catch (jsonParseError) {
           console.error("Error parsing JSON response:", jsonParseError);
           console.log("Raw response:", textResponse);
-          // Provide fallback data if parsing fails
           parsedResult = {
             foodItems: [
               {
@@ -148,7 +147,6 @@ serve(async (req: Request) => {
           };
         }
 
-        // Validate and format the response
         const analysisResult: AnalysisResult = {
           foodItems: parsedResult.foodItems || [],
           totalNutrition: parsedResult.totalNutrition || {
@@ -159,7 +157,6 @@ serve(async (req: Request) => {
           },
         };
 
-        // Store the analysis result in Supabase
         if (userId) {
           const { error: storageError } = await supabaseClient
             .from("food_analysis_results")
@@ -174,10 +171,7 @@ serve(async (req: Request) => {
           }
         }
 
-        return new Response(JSON.stringify(analysisResult), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
+        return res.status(200).json(analysisResult);
       } catch (parseError) {
         console.error("Error parsing Gemini response:", parseError);
         throw parseError;
@@ -188,12 +182,13 @@ serve(async (req: Request) => {
     }
   } catch (error: unknown) {
     console.error("General error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    return res.status(500).json({ 
+      error: error instanceof Error ? error.message : "Unknown error" 
+    });
   }
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
