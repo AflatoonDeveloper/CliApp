@@ -1,6 +1,7 @@
 /// <reference lib="deno.ns" />
 import { serve } from "std/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

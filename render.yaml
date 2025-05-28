@@ -2,7 +2,7 @@ services:
   - type: web
     name: nutriai
     env: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm start
     envVars:
       - key: NEXT_PUBLIC_SUPABASE_URL
@@ -23,4 +23,5 @@ services:
     disk:
       name: next-cache
       mountPath: .next/cache
-      sizeGB: 1 
+      sizeGB: 1
+    nodeVersion: 18.17.0 
